@@ -4,7 +4,6 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 import mysql.connector
-import time
 
 # Connect to the database
 conn = mysql.connector.connect(
@@ -49,18 +48,17 @@ for company in companies:
 
     for year in range(2017, 2022):
 
-        url = 'https://www.malaysiastock.biz/Corporate-Infomation.aspx?securityCode=' + str(company_code)
+        url = 'https://www.google.com/search?q=filetype%3Apdf+' + str(company_name) + '+annual+report+' + str(year) + '+-klse'
 
         # go to the url
         driver.get(url)
-        time.sleep(3)
 
-        # Get the link of the annual report
-        ar = driver.find_element(By.CSS_SELECTOR, "#divAR_" + str(company_code) + "_" + str(year) + " a")
-        ar_link = ar.get_attribute("href")
+        # Get the first search result link
+        first_result = driver.find_element(By.CSS_SELECTOR, "#rcnt a")
+        first_result_link = first_result.get_attribute("href")
 
-        # Print the ar link
-        print(ar_link)
+        # Print the first result link
+        print(first_result_link)
 
     if company_code == '7131':
         break
@@ -68,8 +66,3 @@ for company in companies:
 
 # Close the chrome driver
 driver.quit()
-
-
-
-
-

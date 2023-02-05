@@ -68,8 +68,3 @@ for company in companies:
 
 # Close the chrome driver
 driver.quit()
-
-
-
-
-

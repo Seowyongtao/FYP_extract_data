@@ -50,7 +50,3 @@ print(sentiment_score.text)
 
 # Close the chrome driver
 driver.quit()
-
-
-
-

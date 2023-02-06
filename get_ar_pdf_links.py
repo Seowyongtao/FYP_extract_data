@@ -56,7 +56,7 @@ for company in companies:
         time.sleep(3)
 
         # Get the link of the annual report
-        ar = driver.find_element(By.CSS_SELECTOR, "#divAR_" + str(company_code) + "_" + str(year) + " a")
+        ar = driver.find_element(By.CSS_SELECTOR, "#divAR_" + str(company_code) + "_" + str(year) + " a:nth-of-type(2)")
         ar_link = ar.get_attribute("href")
 
         # Print the ar link

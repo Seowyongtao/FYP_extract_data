@@ -4,17 +4,14 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 import mysql.connector
-import requests
-from PyPDF2 import PdfReader
-import re
 import time
 
 # Connect to the database
 conn = mysql.connector.connect(
-  host="localhost",
-  user="root",
-  password="",
-  database="FYP"
+    host="localhost",
+    user="root",
+    password="",
+    database="FYP"
 )
 
 # Create a cursor object
@@ -42,69 +39,54 @@ driver = webdriver.Chrome(service=service, options=options)
 driver.switch_to.window(driver.current_window_handle)
 driver.maximize_window()
 
-# Experiment
+# Loop the company list and assign the data into an object
 for company in companies:
     company_id = company[0]
-    company_name = company[1]
     company_code = company[2]
 
-    print(company_name)
+    add_data = ("INSERT INTO CompanyYearlyProfitGrowth"
+                "(company_ID)"
+                "VALUES (%s)")
+    data = company_id
+    cursor.execute(add_data, (data,))
+    # Commit the changes
+    conn.commit()
+
+    driver.get('https://klse.i3investor.com/web/stock/financial-annual-unaudited/' + str(company_code) + '')
+    time.sleep(2)
+    search_bar = driver.find_element(By.CSS_SELECTOR, ".dataTables_filter input")
 
     for year in range(2017, 2022):
+        search_bar.clear()
+        search_bar.send_keys(year)
 
-        url = 'https://www.malaysiastock.biz/Corporate-Infomation.aspx?securityCode=' + str(company_code)
+        try:
+            yoy = driver.find_element(By.CSS_SELECTOR, "tbody .odd a")
 
-        # go to the url
-        driver.get(url)
-        time.sleep(3)
+            if yoy.text == '-%':
+                yoy_text = '0'
+            else:
+                yoy_text = yoy.text.replace('%', '', 1).replace(',', '', 1)
 
-        # Get the link of the annual report
-        ar = driver.find_element(By.CSS_SELECTOR, "#divAR_" + str(company_code) + "_" + str(year) + " a:nth-of-type(2)")
-        ar_link = ar.get_attribute("href")
+        except:
+            yoy_text = '0'
 
-        # apply sentiment
-        # Extract pdf text part
-        url = ar_link
+        column = 'profit_growth_' + str(year)
+        company_id_str = str(company_id)
 
-        with requests.get(url, stream=True) as r:
-            r.raise_for_status()
-            with open('../tmp.pdf', 'wb') as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    # If you have chunk encoded response uncomment if
-                    # and set chunk_size parameter to None.
-                    # if chunk:
-                    f.write(chunk)
+        # Update the data in the table
+        update_query = f"UPDATE CompanyYearlyProfitGrowth SET {column} = {yoy_text} WHERE ID = {company_id_str}"
+        cursor.execute(update_query)
 
-        pdf = PdfReader('../tmp.pdf')
+        # Commit the changes
+        conn.commit()
 
-        page_number = 2
-        page_object = pdf.pages[page_number - 1]
+    # if company_code == '7131':
+    #     break
 
-        page_text = page_object.extract_text()
-
-        # Finsentiment part
-        driver.get('https://www.finsentiment.com/default')
-        time.sleep(1)
-
-        text_box = driver.find_element(By.XPATH, '//*[@id="MainContentPlaceHolder_TextSearchBox"]')
-        text_box.send_keys(page_text)
-
-        button = driver.find_element(By.ID, 'MainContentPlaceHolder_Button2')
-        button.click()
-
-        time.sleep(1)
-        sentiment_score = driver.find_element(By.ID, 'MainContentPlaceHolder_LabelSentiment')
-        time.sleep(1)
-        print(ar_link)
-        print(sentiment_score.text)
-
-    if company_code == '7214':
-        break
-
+# Close the cursor and connection
+cursor.close()
+conn.close()
 
 # Close the chrome driver
 driver.quit()
-
-
-
-

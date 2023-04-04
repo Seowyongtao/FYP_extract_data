@@ -44,19 +44,21 @@ for company in companies:
     company_id = company[0]
     company_code = company[2]
 
-    add_data = ("INSERT INTO CompanyYearlyProfitGrowth"
-                "(company_ID)"
-                "VALUES (%s)")
-    data = company_id
-    cursor.execute(add_data, (data,))
-    # Commit the changes
-    conn.commit()
-
     driver.get('https://klse.i3investor.com/web/stock/financial-annual-unaudited/' + str(company_code) + '')
     time.sleep(2)
     search_bar = driver.find_element(By.CSS_SELECTOR, ".dataTables_filter input")
 
+    # Need to edit current year - 5 to current year -1
     for year in range(2017, 2022):
+
+        # Retrieve year id
+        company_values_query = "SELECT * FROM TimeDim WHERE year = " + str(year) +";"
+        cursor.execute(company_values_query)
+
+        # Get year ID
+        result = cursor.fetchall()
+        yearID = result[0][0]
+
         search_bar.clear()
         search_bar.send_keys(year)
 
@@ -71,18 +73,16 @@ for company in companies:
         except:
             yoy_text = '0'
 
-        column = 'profit_growth_' + str(year)
-        company_id_str = str(company_id)
+        add_data = ("INSERT INTO ProfitGrowthFact"
+                    "(company_ID, Time_ID, profit_growth)"
+                    "VALUES (%s, %s, %s)")
 
-        # Update the data in the table
-        update_query = f"UPDATE CompanyYearlyProfitGrowth SET {column} = {yoy_text} WHERE ID = {company_id_str}"
-        cursor.execute(update_query)
-
+        cursor.execute(add_data, (company_id, yearID, yoy_text))
         # Commit the changes
         conn.commit()
 
-    # if company_code == '7131':
-    #     break
+    if company_code == '7131':
+        break
 
 # Close the cursor and connection
 cursor.close()

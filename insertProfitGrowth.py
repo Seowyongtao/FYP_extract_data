@@ -18,7 +18,7 @@ conn = mysql.connector.connect(
 cursor = conn.cursor()
 
 # Retrieve all values from a table
-company_values_query = "SELECT * FROM Company;"
+company_values_query = "SELECT * FROM CompanyDim;"
 cursor.execute(company_values_query)
 
 # Fetch the results
@@ -44,15 +44,33 @@ for company in companies:
     company_id = company[0]
     company_code = company[2]
 
+    url = 'https://www.malaysiastock.biz/Corporate-Infomation.aspx?securityCode=' + str(company_code)
+
+    # Navigate to the page containing the table
+    driver.get(url)
+    time.sleep(2)
+
+    # Find the table element with id 'ctl21_tbCompanyAR'
+    table = driver.find_element(By.ID, 'ctl21_tbCompanyAR')
+
+    # Find the first cell in the table by locating its <td> element
+    first_cell = table.find_element(By.TAG_NAME, 'td')
+
+    # Use string slicing to get the last 4 characters
+    lastest_year = int(first_cell.text[-4:]) + 1
+    lastest_year_minus_5 = lastest_year - 5
+    print(lastest_year)
+    print(lastest_year_minus_5)
+
     driver.get('https://klse.i3investor.com/web/stock/financial-annual-unaudited/' + str(company_code) + '')
     time.sleep(2)
     search_bar = driver.find_element(By.CSS_SELECTOR, ".dataTables_filter input")
 
     # Need to edit current year - 5 to current year -1
-    for year in range(2017, 2022):
+    for year in range(lastest_year_minus_5, lastest_year):
 
         # Retrieve year id
-        company_values_query = "SELECT * FROM TimeDim WHERE year = " + str(year) +";"
+        company_values_query = "SELECT * FROM TimeDim WHERE year = " + str(year) + ";"
         cursor.execute(company_values_query)
 
         # Get year ID

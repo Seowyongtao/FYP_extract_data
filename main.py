@@ -6,6 +6,20 @@ from selenium.webdriver.common.keys import Keys
 import mysql.connector
 import time
 
+
+def contains_ar(string, company_name):
+    if 'ar' in company_name.lower() or 'a-r' in company_name.lower():
+        if 'annual report' in string.lower() or 'annualreport' in string.lower() or 'bursa' in string.lower():
+            return True
+        else:
+            return False
+    else:
+        if 'ar' in string.lower() or 'annual report' in string.lower() or 'annualreport' in string.lower() or 'bursa' in string.lower():
+            return True
+        else:
+            return False
+
+
 # Connect to the database
 conn = mysql.connector.connect(
     host="localhost",
@@ -39,54 +53,85 @@ driver = webdriver.Chrome(service=service, options=options)
 driver.switch_to.window(driver.current_window_handle)
 driver.maximize_window()
 
-# Loop the company list and assign the data into an object
+# Experiment
 for company in companies:
     company_id = company[0]
+    company_name = company[1]
     company_code = company[2]
 
-    driver.get('https://klse.i3investor.com/web/stock/financial-annual-unaudited/' + str(company_code) + '')
-    time.sleep(2)
-    search_bar = driver.find_element(By.CSS_SELECTOR, ".dataTables_filter input")
+    print(company_name)
 
-    # Need to edit current year - 5 to current year -1
     for year in range(2017, 2022):
 
-        # Retrieve year id
-        company_values_query = "SELECT * FROM TimeDim WHERE year = " + str(year) +";"
-        cursor.execute(company_values_query)
+        annual_report_links = []
 
-        # Get year ID
-        result = cursor.fetchall()
-        yearID = result[0][0]
+        url = 'https://www.malaysiastock.biz/Corporate-Infomation.aspx?securityCode=' + str(company_code)
 
-        search_bar.clear()
-        search_bar.send_keys(year)
+        # go to the url
+        driver.get(url)
+        time.sleep(3)
+
+        # Get the link of the annual report
+        try:
+            ar = driver.find_element(By.CSS_SELECTOR,
+                                     "#divAR_" + str(company_code) + "_" + str(year) + " a:nth-of-type(5)")
+
+            ar_text = ar.get_attribute("text")
+
+            if contains_ar(ar_text, company_name):
+                annual_report_links.append(ar.get_attribute("href"))
+        except:
+            pass
 
         try:
-            yoy = driver.find_element(By.CSS_SELECTOR, "tbody .odd a")
+            ar = driver.find_element(By.CSS_SELECTOR,
+                                     "#divAR_" + str(company_code) + "_" + str(year) + " a:nth-of-type(4)")
 
-            if yoy.text == '-%':
-                yoy_text = '0'
-            else:
-                yoy_text = yoy.text.replace('%', '', 1).replace(',', '', 1)
+            ar_text = ar.get_attribute("text")
 
+            if contains_ar(ar_text, company_name):
+                annual_report_links.append(ar.get_attribute("href"))
         except:
-            yoy_text = '0'
+            pass
 
-        add_data = ("INSERT INTO ProfitGrowthFact"
-                    "(company_ID, Time_ID, profit_growth)"
-                    "VALUES (%s, %s, %s)")
+        try:
+            ar = driver.find_element(By.CSS_SELECTOR,
+                                     "#divAR_" + str(company_code) + "_" + str(year) + " a:nth-of-type(3)")
 
-        cursor.execute(add_data, (company_id, yearID, yoy_text))
-        # Commit the changes
-        conn.commit()
+            ar_text = ar.get_attribute("text")
+
+            if contains_ar(ar_text, company_name):
+                annual_report_links.append(ar.get_attribute("href"))
+        except:
+            pass
+
+        try:
+            ar = driver.find_element(By.CSS_SELECTOR,
+                                     "#divAR_" + str(company_code) + "_" + str(year) + " a:nth-of-type(2)")
+
+            ar_text = ar.get_attribute("text")
+
+            if contains_ar(ar_text, company_name):
+                annual_report_links.append(ar.get_attribute("href"))
+        except:
+            pass
+
+        try:
+            ar = driver.find_element(By.CSS_SELECTOR,
+                                     "#divAR_" + str(company_code) + "_" + str(year) + " a")
+
+            ar_text = ar.get_attribute("text")
+
+            if contains_ar(ar_text, company_name):
+                annual_report_links.append(ar.get_attribute("href"))
+        except:
+            pass
+
+        # Print the ar link
+        print(annual_report_links)
 
     if company_code == '7131':
         break
-
-# Close the cursor and connection
-cursor.close()
-conn.close()
 
 # Close the chrome driver
 driver.quit()

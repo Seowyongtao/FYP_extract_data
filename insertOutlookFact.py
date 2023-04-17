@@ -107,13 +107,30 @@ for company in companies:
     company_code = company[2]
 
     # temporary
-    if company_code in ['5250', '7214']:
-        print('hey')
-        continue
+    # if company_code in ['5250', '7214']:
+    #     print('hey')
+    #     continue
 
     print(company_name)
 
-    for year in range(2017, 2022):
+    url = 'https://www.malaysiastock.biz/Corporate-Infomation.aspx?securityCode=' + str(company_code)
+
+    # Navigate to the page containing the table
+    driver.get(url)
+
+    # Find the table element with id 'ctl21_tbCompanyAR'
+    table = driver.find_element(By.ID, 'ctl21_tbCompanyAR')
+
+    # Find the first cell in the table by locating its <td> element
+    first_cell = table.find_element(By.TAG_NAME, 'td')
+
+    # Use string slicing to get the last 4 characters
+    lastest_year = int(first_cell.text[-4:]) + 1
+    lastest_year_minus_5 = lastest_year - 5
+    print(lastest_year)
+    print(lastest_year_minus_5)
+
+    for year in range(lastest_year_minus_5, lastest_year):
 
         annual_report_links = []
 
